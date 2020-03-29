@@ -17,7 +17,7 @@ so they are anonymous (and your 'name' is expected to be funny, no pressure).
 """
 
 from config import *
-
+import random
 
 
 def get_class_name():
@@ -29,7 +29,7 @@ class chfeng_A1:
     def __init__(self):
         self.name = "chfeng_A1"
         self.uzh_shortname = "chfeng"
-        self.beam_deep =20
+        self.beam_deep = 2
         self.beam_k = 2
 
         
@@ -163,11 +163,11 @@ class chfeng_A1:
             for item in line:
                 if item == CELL_RHUBARB:
                     distance = abs(possible_goal[0]-sheep_position[0])+abs(possible_goal[1]-sheep_position[1])
-                    point = 5/distance
-                    possible_goals.append((y_position, x_position, 5, distance, point))
+                    point = 1.5/(distance+1)
+                    possible_goals.append((y_position, x_position, 1.5, distance, point))
                 elif item == CELL_GRASS:
                     distance = abs(possible_goal[0]-sheep_position[0])+abs(possible_goal[1]-sheep_position[1])
-                    point = 1 / distance
+                    point = 1 / (distance+1)
                     possible_goals.append((y_position, x_position, 1, distance, point))
                 x_position += 1
             y_position += 1
@@ -215,9 +215,9 @@ class chfeng_A1:
             all_candidates = []
             for i in range(len(sequences)):
                 seq, score = sequences[i]
-                for m in range(num_beams):
+                for m in range(max_len):
                     possible_goals = self.possible_goals(sheep_position, field)
-                    topk_goals = self.k_best(possible_goals, num_beams)
+                    topk_goals = self.k_best(possible_goals, max_len)
                     sheep_position = topk_goals[m]
                     for goal in topk_goals:
                         candidate = [seq + [(goal[0], goal[1])], score + goal[4]]
@@ -232,64 +232,165 @@ class chfeng_A1:
 
         distance_x = figure_position[1]-closest_goal[1]
         distance_y = figure_position[0]-closest_goal[0]
-        
+        can_up = self.valid_move(figure, figure_position[0]-1,figure_position[1],field)
+        can_down = self.valid_move(figure, figure_position[0]+1,figure_position[1],field)
+        can_left = self.valid_move(figure, figure_position[0],figure_position[1]-1,field)
+        can_right = self.valid_move(figure, figure_position[0],figure_position[1]+1,field)
+
         if distance_x == 0:
-            #print('item right above/below me')
+            #print('item above/below me')
             if distance_y > 0:
-                if self.valid_move(figure, figure_position[0]-1,figure_position[1],field):
+                # above me
+                if can_up:
                     return MOVE_UP
-                else:
+                elif can_right and can_left:
+                    seed = random.randint(0,1)
+                    if seed == 0:
+                        return MOVE_LEFT
+                    else:
+                        return MOVE_RIGHT
+                elif can_right:
                     return MOVE_RIGHT
-            else:
-                if self.valid_move(figure, figure_position[0]+1,figure_position[1],field):
+                elif can_left:
+                    return MOVE_LEFT
+                elif can_down:
                     return MOVE_DOWN
                 else:
+                    return MOVE_NONE
+            
+            if distance_y <= 0:
+                # below me
+                if can_down:
+                    return MOVE_DOWN
+                elif can_right and can_left:
+                    seed = random.randint(0,1)
+                    if seed == 0:
+                        return MOVE_LEFT
+                    else:
+                        return MOVE_RIGHT
+                elif can_right:
                     return MOVE_RIGHT
-        elif distance_y == 0:
-            #print('item right beside me')
+                elif can_left:
+                    return MOVE_LEFT
+                elif can_up:
+                    return MOVE_UP
+                else:
+                    return MOVE_NONE
+
+        if distance_y == 0:
+                #print('item right/left me')
             if distance_x > 0:
-                if self.valid_move(figure, figure_position[0],figure_position[1]-1,field):
-                    
+                # left me
+                if can_left:
+                    return MOVE_LEFT
+                elif can_up and can_down:
+                    seed = random.randint(0,1)
+                    if seed == 0:
+                        return MOVE_UP
+                    else:
+                        return MOVE_DOWN
+                elif can_up:
+                    return MOVE_up
+                elif can_down:
+                    return MOVE_down
+                elif can_right:
+                    return MOVE_RIGHT
+                else:
+                    return MOVE_NONE
+            
+            if distance_x <= 0:
+                # right me
+                if can_right:
+                    return MOVE_RIGHT
+                elif can_up and can_down:
+                    seed = random.randint(0,1)
+                    if seed == 0:
+                        return MOVE_UP
+                    else:
+                        return MOVE_DOWN
+                elif can_up:
+                    return MOVE_up
+                elif can_down:
+                    return MOVE_down
+                elif can_left:
                     return MOVE_LEFT
                 else:
+                    return MOVE_NONE
+            
+        if distance_x > 0 and distance_y > 0:
+            # left and above me
+            if can_up and can_left:
+                seed = random.randint(0,1)
+                if seed == 0:
                     return MOVE_UP
+                else:
+                    return MOVE_LEFT
+            elif can_up:
+                return MOVE_UP
+            elif can_left:
+                return MOVE_LEFT
+            elif can_down:
+                return MOVE_DOWN
+            elif can_right:
+                return MOVE_RIGHT
             else:
-                if self.valid_move(figure, figure_position[0],figure_position[1]+1,field):
-                    return MOVE_RIGHT
-                else:
+                return MOVE_NONE
+
+        if distance_x < 0 and distance_y > 0:
+                # right and above me
+            if can_up and can_right:
+                seed = random.randint(0,1)
+                if seed == 0:
                     return MOVE_UP
-        
-        else:
-            #go left or up
-            if distance_x > 0 and distance_y > 0:
-                if self.valid_move(figure, figure_position[0],figure_position[1]-1,field):
-                    return MOVE_LEFT
                 else:
-                    return MOVE_UP
-
-            #go left or down
-            elif distance_x > 0 and distance_y < 0:
-                if self.valid_move(figure, figure_position[0],figure_position[1]-1,field):
-                    return MOVE_LEFT
-                else:
-                    return MOVE_DOWN
-
-            #go right or up
-            elif distance_x < 0 and distance_y > 0:
-                if self.valid_move(figure,figure_position[0],figure_position[1]+1,field):
                     return MOVE_RIGHT
-                else:
-                    return MOVE_UP
-
-            #go right or down
-            elif distance_x < 0 and distance_y < 0:
-                if self.valid_move(figure,figure_position[0],figure_position[1]+1,field):
-                    return MOVE_RIGHT
-                else:
-                    return MOVE_DOWN
-
+            elif can_up:
+                return MOVE_UP
+            elif can_right:
+                return MOVE_RIGHT
+            elif can_down:
+                return MOVE_DOWN
+            elif can_left:
+                return MOVE_LEFT
             else:
-                # print('fail')
+                return MOVE_NONE
+
+        if distance_x > 0 and distance_y < 0:
+            # left and below me
+            if can_down and can_left:
+                seed = random.randint(0,1)
+                if seed == 0:
+                    return MOVE_DOWN
+                else:
+                    return MOVE_LEFT
+            elif can_down:
+                return MOVE_DOWN
+            elif can_left:
+                return MOVE_LEFT
+            elif can_up:
+                return MOVE_UP
+            elif can_right:
+                return MOVE_RIGHT
+            else:
+                return MOVE_NONE
+
+        if distance_x < 0 and distance_y < 0:
+            # right and below me
+            if can_down and can_right:
+                seed = random.randint(0,1)
+                if seed == 0:
+                    return MOVE_DOWN
+                else:
+                    return MOVE_RIGHT
+            elif can_down:
+                return MOVE_DOWN
+            elif can_right:
+                return MOVE_RIGHT
+            elif can_up:
+                return MOVE_UP
+            elif can_left:
+                return MOVE_LEFT
+            else:
                 return MOVE_NONE
 
     def wolf_close(self,player_number,field):
@@ -300,7 +401,7 @@ class chfeng_A1:
             sheep_position = self.get_player_position(CELL_SHEEP_2,field)
             wolf_position = self.get_player_position(CELL_WOLF_1,field)
 
-        if (abs(sheep_position[0]-wolf_position[0]) < 2 and abs(sheep_position[1]-wolf_position[1]) < 2):
+        if (abs(sheep_position[0]-wolf_position[0]) <= 2 and abs(sheep_position[1]-wolf_position[1]) <= 2):
             #print('wolf is close')
             return True
         return False
@@ -362,75 +463,168 @@ class chfeng_A1:
         distance_y = sheep_position[0] - wolf_position[0]
         abs_distance_y = abs(sheep_position[0] - wolf_position[0])
 
-        #print('player_number %i' %player_number)
-        #print('running from wolf')
-        #if the wolf is close vertically
-        if abs_distance_y == 1 and distance_x == 0:
-            #print('wolf is close vertically')
-            #if it's above the sheep, move down if possible
-            if distance_y > 0:
-                if self.valid_move(sheep,sheep_position[0]+1,sheep_position[1], field):
-                    return MOVE_DOWN
-            else: #it's below the sheep, move up if possible
-                if self.valid_move(sheep,sheep_position[0]-1,sheep_position[1], field):
-                    return MOVE_UP            
-            # if this is not possible, flee to the right or left
-            if self.valid_move(sheep,sheep_position[0],sheep_position[1]+1, field):
-                return MOVE_RIGHT
-            elif self.valid_move(sheep,sheep_position[0],sheep_position[1]-1, field):
-                return MOVE_LEFT
-            else: #nowhere to go
-                return MOVE_NONE
-
-        #else if the wolf is close horizontally
-        elif abs_distance_x == 1 and distance_y == 0:
-            #print('wolf is close horizontally')
-            #if it's to the left, move to the right if possible
-            if distance_x > 0:
-                if self.valid_move(sheep,sheep_position[0],sheep_position[1]-1, field):
-                    return MOVE_RIGHT
-            else: #it's to the right, move left if possible
-                if self.valid_move(sheep,sheep_position[0],sheep_position[1]+1, field):
-                    return MOVE_LEFT
-            #if this is not possible, flee up or down
-            if self.valid_move(sheep,sheep_position[0]-1,sheep_position[1], field):
-                return MOVE_UP
-            elif self.valid_move(sheep,sheep_position[0]+1,sheep_position[1], field):
+        can_up = self.valid_move(sheep, sheep_position[0]-1,sheep_position[1],field)
+        can_down = self.valid_move(sheep, sheep_position[0]+1,sheep_position[1],field)
+        can_left = self.valid_move(sheep, sheep_position[0],sheep_position[1]-1,field)
+        can_right = self.valid_move(sheep, sheep_position[0],sheep_position[1]+1,field)
+        print(can_up,can_down, can_left, can_right)
+        
+        if distance_y > 0 and distance_x == 0:
+            #w above the s
+            if can_down:
                 return MOVE_DOWN
-            else: #nowhere to go
+            elif can_left and can_right:
+                seed = random.randint(0,2)
+                if seed == 0:
+                    return MOVE_LEFT
+                if seed == 1:
+                    return MOVE_RIGHT
+            else:
                 return MOVE_NONE
 
-        elif abs_distance_x == 1 and abs_distance_y == 1:
-            #print('wolf is in my surroundings')
-            #wolf is left and up
-            if distance_x > 0 and distance_y > 0:
-                #move right or down
-                if self.valid_move(sheep,sheep_position[0],sheep_position[1]+1, field):
-                    return MOVE_RIGHT
-                else:
-                    return MOVE_DOWN
-            #wolf is left and down
-            if distance_x > 0 and distance_y < 0:
-                #move right or up
-                if self.valid_move(sheep,sheep_position[0],sheep_position[1]+1, field):
-                    return MOVE_RIGHT
-                else:
-                    return MOVE_UP
-            #wolf is right and up
-            if distance_x < 0 and distance_y > 0:
-                #move left or down
-                if self.valid_move(sheep,sheep_position[0],sheep_position[1]-1, field):
+        if distance_y < 0 and distance_x == 0:
+            #w below the s
+            if can_up:
+                return MOVE_UP
+            elif can_left and can_right:
+                seed = random.randint(0,2)
+                if seed == 0:
                     return MOVE_LEFT
-                else:
-                    return MOVE_DOWN
-            #wolf is right and down
-            if distance_x < 0 and distance_y < 0:
-                #move left and up
-                if self.valid_move(sheep,sheep_position[0],sheep_position[1]-1, field):
-                    return MOVE_LEFT
-                else:
-                    return MOVE_UP
+                if seed == 1:
+                    return MOVE_RIGHT
+            else:
+                return MOVE_NONE
 
+        if distance_y == 0 and distance_x > 0:
+            #w left the s
+            if can_right:
+                return MOVE_RIGHT
+            elif can_up and can_down:
+                seed = random.randint(0,2)
+                if seed == 0:
+                    return MOVE_UP
+                if seed == 1:
+                    return MOVE_DOWN
+            else:
+                return MOVE_NONE
+
+        if distance_y == 0 and distance_x < 0:
+            #w right the s
+            if can_left:
+                return MOVE_LEFT
+            elif can_up and can_down:
+                seed = random.randint(0,2)
+                if seed == 0:
+                    return MOVE_UP
+                if seed == 1:
+                    return MOVE_DOWN
+            else:
+                return MOVE_NONE
+
+        if distance_y < 0 and distance_x < 0:
+            #w below and right the s
+            if distance_y >= distance_x:
+                #(x=-2, y=-1)
+                if can_left:
+                    return MOVE_LEFT
+                elif can_up:
+                    return MOVE_UP
+                elif can_right:
+                    return MOVE_RIGHT
+                elif can_down:
+                    return MOVE_DOWN
+                else:
+                    return MOVE_NONE
+            else:
+                if can_up:
+                    return MOVE_UP
+                elif can_left:
+                    return MOVE_LEFT   
+                elif can_right:
+                    return MOVE_RIGHT
+                elif can_down:
+                    return MOVE_DOWN
+                else:
+                    return MOVE_NONE
+      
+        if distance_y > 0 and distance_x < 0:
+            #w above and right the s
+            if abs_distance_x > abs_distance_y:
+                #(x=-2, y=1)
+                if can_left:
+                    return MOVE_LEFT
+                elif can_down:
+                    return MOVE_DOWN
+                elif can_right:
+                    return MOVE_RIGHT
+                elif can_up:
+                    return MOVE_UP
+                else:
+                    return MOVE_NONE
+            else:
+                if can_down:
+                    return MOVE_DOWN
+                elif can_left:
+                    return MOVE_LEFT   
+                elif can_right:
+                    return MOVE_RIGHT
+                elif can_up:
+                    return MOVE_UP
+                else:
+                    return MOVE_NONE
+
+        if distance_y > 0 and distance_x > 0:
+            #w above and left the s
+            if abs_distance_x > abs_distance_y:
+                    #(x = 2, y=1)
+                if can_right:
+                    return MOVE_RIGHT
+                elif can_down:
+                    return MOVE_DOWN
+                elif can_left:
+                    return MOVE_LEFT
+                elif can_up:
+                    return MOVE_UP
+                else:
+                    return MOVE_NONE
+            else:
+                if can_down:
+                    return MOVE_DOWN
+                elif can_right:
+                    return MOVE_RIGHT 
+                elif can_left:
+                    return MOVE_LEFT
+                elif can_up:
+                    return MOVE_UP
+                else:
+                    return MOVE_NONE
+
+
+        if distance_y < 0 and distance_x > 0:
+            #w below and left the s
+            if abs_distance_x > abs_distance_y:
+                #(x = 2, y=-1)
+                if can_right:
+                    return MOVE_RIGHT
+                elif can_up:
+                    return MOVE_UP
+                elif can_left:
+                    return MOVE_LEFT
+                elif can_down:
+                    return MOVE_DOWN
+                else:
+                    return MOVE_NONE
+            else:
+                if can_up:
+                    return MOVE_UP
+                elif can_right:
+                    return MOVE_RIGHT 
+                elif can_left:
+                    return MOVE_LEFT
+                elif can_down:
+                    return MOVE_DOWN
+                else:
+                    return MOVE_NONE
         else: #this method was wrongly called
             return MOVE_NONE
 
@@ -442,8 +636,10 @@ class chfeng_A1:
 
         if self.wolf_close(p_num, field):
             move = self.run_from_wolf(p_num, field)
+            print("run move {}".format(move))
         elif self.food_present(field):
             move = self.gather_closest_goal(self.beam_search(p_num, field), field, figure)
+            print("normal move {}".format(move))
         else:
             move = MOVE_NONE
 
