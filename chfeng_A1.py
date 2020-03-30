@@ -31,6 +31,7 @@ class chfeng_A1:
         self.uzh_shortname = "chfeng"
         self.beam_deep = 2
         self.beam_k = 2
+        self.searc_deep = 4
 
         
     def get_player_position(self,figure,field):
@@ -47,6 +48,20 @@ class chfeng_A1:
                     food_present = True
                     break
         return food_present
+    
+        
+    def current_total_score(self,field):
+        """
+        get the current total score of current field
+        """
+        socre = 0
+        for line in field: 
+            for item in line:
+                if item == CELL_RHUBARB:
+                    socre += 5
+                elif item == CELL_GRASS:
+                    socre += 1
+        return socre
 
     def sheep_score(self, current_position, player_number, figure, field):
         '''
