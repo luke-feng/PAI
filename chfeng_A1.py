@@ -50,7 +50,7 @@ class chfeng_A1:
         return food_present
     
         
-    def current_total_score(self,field):
+    def current_field_score(self,field):
         """
         get the current total score of current field
         """
@@ -84,8 +84,6 @@ class chfeng_A1:
         elif field[x][y] == CELL_GRASS:
             return 1
         elif self.valid_move(figure, x, y, field) == False:
-            return -100
-        elif (abs(x-wolf_position[0]) < 2 and abs(y-wolf_position[1]) < 2):
             return -100
         else:
             return 0
